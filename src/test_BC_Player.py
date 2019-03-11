@@ -12,10 +12,10 @@ mySide = None
 PIECE_PRIORITY = {'k':10000, 'f':80, 'c':60, 'i':40, 'w':30, 'l':20, 'p':10}
 
 def nickname():
-    return "Husky"
+    return "opponent"
 
 def introduce():
-    return "I'm a husky. Wolf wolf!"
+    return "I'm a bad guy!"
 
 def prepare(player2Nickname):
     pass
@@ -28,7 +28,7 @@ def makeMove(currentState, currentRemark, timelimit):
     if mySide is None:
         mySide = currentState.whose_move
 
-    max_depth = 2
+    max_depth = 1
     move = iterative_deepening(currentState, max_depth, timelimit)
     newState = stateTransform(currentState, move)
 
@@ -66,7 +66,7 @@ def iterative_deepening(currentState, max_depth, timelimit):
     #       and compare to the time from this part, if times up, break.
 
 
-def min_max(state, depth, min_max_value, alphaBeta = True):
+def min_max(state, depth, min_max_value, alphaBeta = False):
 
     all_move_list = []
     new_state_list = []
@@ -93,7 +93,6 @@ def min_max(state, depth, min_max_value, alphaBeta = True):
                     best_move = m_
                     # print('best move = ', best_move)
                     if alphaBeta and min_max_value[1] >= min_max_value[0]:
-                        # print('cut')
                         return min_max_value, best_move
             return min_max_value, best_move
 
@@ -115,7 +114,6 @@ def min_max(state, depth, min_max_value, alphaBeta = True):
                     min_max_value[0] = nextLayer_max[1]
                     best_move = m_
                     if alphaBeta and min_max_value[1] >= min_max_value[0]:
-                        # print('cut')
                         return min_max_value, best_move
             return min_max_value, best_move
 
@@ -268,7 +266,6 @@ def horizontal_vertical(piece, board, i, j, move):
         elif (piece.lower() == 'l' and iptr <= 6) \
                 or (piece.lower() == 'i' and iptr <= 6 and CODE_TO_INIT[board[iptr][j]].lower() == 'l'):
             if isOppositePiece(board, i, j, iptr, j) and board[iptr+1][j] == 0:
-                print('leaper eat', iptr, j)
                 move.append(piece + str(i) + str(j) + '-' + str(iptr + 1) + str(j))
             break
         else:
@@ -284,7 +281,6 @@ def horizontal_vertical(piece, board, i, j, move):
         elif (piece.lower() == 'l' and iptr > 0) \
                 or (piece.lower() == 'i' and iptr > 0 and CODE_TO_INIT[board[iptr][j]].lower() == 'l'):
             if isOppositePiece(board, i, j, iptr, j) and board[iptr-1][j] == 0:
-                print('leaper eat', iptr, j)
                 move.append(piece + str(i) + str(j) + '-' + str(iptr - 1) + str(j))
             break
         else:
@@ -300,7 +296,6 @@ def horizontal_vertical(piece, board, i, j, move):
         elif (piece.lower() == 'l' and jptr <= 6) \
                 or (piece.lower() == 'i' and jptr <= 6 and CODE_TO_INIT[board[i][jptr]].lower() == 'l'):
             if isOppositePiece(board, i, j, i, jptr) and board[i][jptr+1] == 0:
-                print('leaper eat', i, jptr)
                 move.append(piece + str(i) + str(j) + '-' + str(i) + str(jptr+1))
             break
         else:
@@ -316,7 +311,6 @@ def horizontal_vertical(piece, board, i, j, move):
         elif (piece.lower() == 'l' and jptr > 0) \
                 or (piece.lower() == 'i' and jptr > 0 and CODE_TO_INIT[board[i][jptr]].lower() == 'l'):
             if isOppositePiece(board, i, j, i, jptr) and board[i][jptr-1] == 0:
-                print('leaper eat', i, jptr)
                 move.append(piece + str(i) + str(j) + '-' + str(i) + str(jptr-1))
             break
         else:
