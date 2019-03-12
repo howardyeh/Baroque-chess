@@ -7,9 +7,14 @@ from BC_state_etc import *
 from copy import deepcopy
 import numpy as np
 from random import shuffle
+import time
 
 mySide = None
+overNot = False
+startTime = 0
 PIECE_PRIORITY = {'k':10000, 'f':80, 'c':60, 'i':40, 'w':30, 'l':20, 'p':10}
+# PIECE_PRIORITY = {'k':20000, 'i':5000, 'w':2000, 'l':1000, 'p':1000, 'c':500, 'f':200} #loose
+# PIECE_PRIORITY = {'k':20000, 'w':6000, 'p':1000, 'l':2500, 'i':1000, 'c':200, 'f':100}
 
 def nickname():
     return "Husky"
@@ -24,11 +29,12 @@ def makeMove(currentState, currentRemark, timelimit):
 
     # Compute the new state for a move.
     # This is a placeholder that just copies the current state.
-    global mySide
+    global mySide, startTime
     if mySide is None:
         mySide = currentState.whose_move
 
-    max_depth = 2
+    max_depth = 4
+    startTime = time.time()
     move = iterative_deepening(currentState, max_depth, timelimit)
     newState = stateTransform(currentState, move)
 
@@ -50,28 +56,27 @@ def makeMove(currentState, currentRemark, timelimit):
 def iterative_deepening(currentState, max_depth, timelimit):
     timesup = False
     best_move = ""
-    for depth in range(max_depth-1, max_depth):
+    for depth in range(max_depth):
         # print('max depth = ', depth+1)
-        value, move = min_max(currentState, depth+1, [1000000, -1000000])
+        value, move = min_max(currentState, depth+1, [1000000, -1000000], timelimit)
         if move is not None:
             best_move = move
-        # if timesup:
-        #     break;
-        # else:
-        #     value, best_move, timesup = min_max(currentState, depth, (1000000, -1000000))
+        else:
+            print('timesup! the deepest level = ', depth)
+            return best_move # is move is None, time is up
 
     return best_move
 
-    # TODO: add in time factor, break when time is up, maybe add a time stamp in min_max()
-    #       and compare to the time from this part, if times up, break.
 
-
-def min_max(state, depth, min_max_value, alphaBeta = True):
+def min_max(state, depth, min_max_value, timelimit, alphaBeta = True):
 
     all_move_list = []
     new_state_list = []
     best_move = ""
     # print('depth = ', depth)
+
+    if(time.time() - startTime) >= (timelimit - 0.005):
+        return None, None
 
     if mySide == 1:
         if state.whose_move == 1: # my turn (white)
@@ -87,7 +92,15 @@ def min_max(state, depth, min_max_value, alphaBeta = True):
             shuffle(new_state_list)
 
             for s_, m_ in new_state_list:
-                nextLayer_min, _ = min_max(s_, depth - 1, deepcopy(min_max_value))
+                if over_or_not(s_.board, state.whose_move):
+                    # print(1-mySide, 'its over~~')
+                    min_max_value[1] = 20000
+                    return min_max_value, m_
+                nextLayer_min, _ = min_max(s_, depth - 1, deepcopy(min_max_value), timelimit)
+                
+                if nextLayer_min == None: # time's up
+                    return None, None
+
                 if nextLayer_min[0] > min_max_value[1]:
                     min_max_value[1] = nextLayer_min[0]
                     best_move = m_
@@ -110,7 +123,15 @@ def min_max(state, depth, min_max_value, alphaBeta = True):
             shuffle(new_state_list)
 
             for s_, m_ in new_state_list:
-                nextLayer_max, _ = min_max(s_, depth - 1, deepcopy(min_max_value))
+                if over_or_not(s_.board, state.whose_move):
+                    # print(mySide,'its over~~')
+                    min_max_value[0] = -20000
+                    return min_max_value, m_
+                nextLayer_max, _ = min_max(s_, depth - 1, deepcopy(min_max_value), timelimit)
+
+                if nextLayer_max == None: # time's up
+                    return None, None
+                
                 if nextLayer_max[1] < min_max_value[0]:
                     min_max_value[0] = nextLayer_max[1]
                     best_move = m_
@@ -131,7 +152,11 @@ def min_max(state, depth, min_max_value, alphaBeta = True):
                 new_state_list.append((stateTransform(state, m), m))
 
             for s_, m_ in new_state_list:
-                nextLayer_min, _ = min_max(s_, depth - 1, deepcopy(min_max_value))
+                nextLayer_min, _ = min_max(s_, depth - 1, deepcopy(min_max_value), timelimit)
+                
+                if nextLayer_min == None: # time's up
+                    return None, None
+
                 if nextLayer_min[0] > min_max_value[1]:
                     min_max_value[1] = nextLayer_min[0]
                     best_move = m_
@@ -149,7 +174,11 @@ def min_max(state, depth, min_max_value, alphaBeta = True):
                 new_state_list.append((stateTransform(state, m), m))
 
             for s_, m_ in new_state_list:
-                nextLayer_max, _ = min_max(s_, depth - 1, deepcopy(min_max_value))
+                nextLayer_max, _ = min_max(s_, depth - 1, deepcopy(min_max_value), timelimit)
+
+                if nextLayer_max == None: # time's up
+                    return None, None
+
                 if nextLayer_max[1] < min_max_value[0]:
                     min_max_value[0] = nextLayer_max[1]
                     best_move = m_
@@ -157,6 +186,12 @@ def min_max(state, depth, min_max_value, alphaBeta = True):
                         return min_max_value, best_move
             return min_max_value, best_move
 
+def over_or_not(board, whose_move):
+    for i in range(8):
+        for j in range(8):
+            if board[i][j] == (13 - whose_move):
+                return False
+    return True
 
 def possibleMoves(state):
     # for each chess move = [(role, move), (role, move)...]
@@ -203,7 +238,7 @@ def possibleMoves(state):
 def isFreeze(board, i, j, whiteMove):
     freezer = -1
     imitator = -1
-    if whiteMove: 
+    if whiteMove:  # 1
         freezer = 14 # black freezer
         imitator = 9 # black imitator
     else:
@@ -213,7 +248,7 @@ def isFreeze(board, i, j, whiteMove):
     IamFreezer = (whiteMove and board[i][j] == 14) or (not whiteMove and board[i][j] == 15)
     for p in range(i-1, i+2):
         for q in range(j-1, j+2):
-            if 0 <= p < 8 and 0 <= q < 8 and (p is not i and q is not j):
+            if 0 <= p < 8 and 0 <= q < 8:
                 if board[p][q]== freezer or (IamFreezer and board[p][q] is imitator):
                     return True
     return False
@@ -245,9 +280,9 @@ def staticEval(state):
             piece = board[row][column]
             if (piece != 0):
                 if (piece%2==1):
-                    white_score += PIECE_PRIORITY[CODE_TO_INIT[piece].lower()]
+                    white_score += (PIECE_PRIORITY[CODE_TO_INIT[piece].lower()])
                 else:
-                    black_score += PIECE_PRIORITY[CODE_TO_INIT[piece].lower()]
+                    black_score += (PIECE_PRIORITY[CODE_TO_INIT[piece].lower()]+10)
 
     if mySide == 1:
         return white_score - black_score
@@ -268,7 +303,7 @@ def horizontal_vertical(piece, board, i, j, move):
         elif (piece.lower() == 'l' and iptr <= 6) \
                 or (piece.lower() == 'i' and iptr <= 6 and CODE_TO_INIT[board[iptr][j]].lower() == 'l'):
             if isOppositePiece(board, i, j, iptr, j) and board[iptr+1][j] == 0:
-                print('leaper eat', iptr, j)
+                # print('leaper eat', iptr, j)
                 move.append(piece + str(i) + str(j) + '-' + str(iptr + 1) + str(j))
             break
         else:
@@ -284,7 +319,7 @@ def horizontal_vertical(piece, board, i, j, move):
         elif (piece.lower() == 'l' and iptr > 0) \
                 or (piece.lower() == 'i' and iptr > 0 and CODE_TO_INIT[board[iptr][j]].lower() == 'l'):
             if isOppositePiece(board, i, j, iptr, j) and board[iptr-1][j] == 0:
-                print('leaper eat', iptr, j)
+                # print('leaper eat', iptr, j)
                 move.append(piece + str(i) + str(j) + '-' + str(iptr - 1) + str(j))
             break
         else:
@@ -300,7 +335,7 @@ def horizontal_vertical(piece, board, i, j, move):
         elif (piece.lower() == 'l' and jptr <= 6) \
                 or (piece.lower() == 'i' and jptr <= 6 and CODE_TO_INIT[board[i][jptr]].lower() == 'l'):
             if isOppositePiece(board, i, j, i, jptr) and board[i][jptr+1] == 0:
-                print('leaper eat', i, jptr)
+                # print('leaper eat', i, jptr)
                 move.append(piece + str(i) + str(j) + '-' + str(i) + str(jptr+1))
             break
         else:
@@ -316,7 +351,7 @@ def horizontal_vertical(piece, board, i, j, move):
         elif (piece.lower() == 'l' and jptr > 0) \
                 or (piece.lower() == 'i' and jptr > 0 and CODE_TO_INIT[board[i][jptr]].lower() == 'l'):
             if isOppositePiece(board, i, j, i, jptr) and board[i][jptr-1] == 0:
-                print('leaper eat', i, jptr)
+                # print('leaper eat', i, jptr)
                 move.append(piece + str(i) + str(j) + '-' + str(i) + str(jptr-1))
             break
         else:
@@ -406,23 +441,46 @@ def kingMove(board, i, j, move):
 ### capture function ###
 def handleCapture(newState, piece, fromi, fromj, toi, toj):
     board = newState.board
+    capture_or_not = False
     if piece.lower() == 'p':
-        return pincherCapture(board, toi, toj)
+        capture_or_not = pincherCapture(board, toi, toj)
+        # if capture_or_not:
+            # print('Pincher capture')
+        return capture_or_not
     elif piece.lower() == 'i':
-        return pincherCapture(board, toi, toj, True) or \
+        capture_or_not = pincherCapture(board, toi, toj, True) or \
                 withdrawerCapture(board, fromi, fromj, toi, toj, True) or \
                 coordinatorCapture(board, toi, toj, newState.whose_move, True) or \
                 leaperCapture(board, fromi, fromj, toi, toj, True)
+        # if capture_or_not:
+            # print('imitator capture')
+        return capture_or_not
     elif piece.lower() == 'w':
-        return withdrawerCapture(board, fromi, fromj, toi, toj)
+        capture_or_not = withdrawerCapture(board, fromi, fromj, toi, toj)
+        # if capture_or_not:
+            # print('withdrawer capture')
+        return capture_or_not
     elif piece.lower() == 'c':
-        return coordinatorCapture(board, toi, toj, newState.whose_move)
+        capture_or_not = coordinatorCapture(board, toi, toj, newState.whose_move)
+        # if capture_or_not:
+            # print('coordinator capture')
+        return capture_or_not
     elif piece.lower() == 'l':
-        return leaperCapture(board, fromi, fromj, toi, toj)
+        capture_or_not = leaperCapture(board, fromi, fromj, toi, toj)
+        # if capture_or_not:
+            # print('leaper capture')
+        return capture_or_not
     else:
         return False
 
+
+
 def pincherCapture(board, r, c, is_imitator=False): ##
+    global overNot
+
+    isCapture = False
+    isImiPinc = True
+
     for i in range(-1, 2, 2):   #return -1,1
         adj_r = r + i
         adj_c = c + i
@@ -431,46 +489,61 @@ def pincherCapture(board, r, c, is_imitator=False): ##
                 if board[r][adj_c+i] != 0 and board[r][adj_c+i] % 2 == board[r][c] % 2:
                     if is_imitator:
                         if CODE_TO_INIT[board[r][adj_c]].lower()!='p':
-                            return False
-                        #imitator = CODE_TO_INIT[board[r][c]]
-                        #return adjacentCapture(board, r, adj_c, r, c, imitator)
+                            isImiPinc = False
+                            isCapture = isCapture or isImiPinc
+                        else:
+                            isCapture = isCapture or isImiPinc
+                    else:
+                        isCapture = isCapture or True
 
-                    #return adjacentCapture(board, r, adj_c, r, c)
-                    board[r][adj_c] = 0
-                    return True
+                    if isImiPinc:    
+                        if board[r][adj_c] == 12 or board[r][adj_c] == 13:
+                            overNot = True
+                        board[r][adj_c] = 0
+            
+            isImiPinc = True
             if isOppositePiece(board, r, c, adj_r, c):
                 if board[adj_r+i][c] != 0 and board[adj_r+i][c] % 2 == board[r][c] % 2: ##
                     if is_imitator:
                         if CODE_TO_INIT[board[adj_r][c]].lower()!='p':
-                            return False
-                        #imitator = CODE_TO_INIT[board[r][c]]
-                        #return adjacentCapture(board, adj_r, c, r, c, imitator)
-
-                    #return adjacentCapture(board, adj_r, c, r, c)
-                    board[adj_r][c]=0
-                    return True
-    return False
+                            isImiPinc = False
+                            isCapture = isCapture or isImiPinc
+                        else:
+                            isCapture = isCapture or isImiPinc
+                    else: 
+                        isCapture = isCapture or True
+                        
+                    if isImiPinc:
+                        if board[r][adj_c] == 12 or board[r][adj_c] == 13:
+                            overNot = True
+                        board[adj_r][c]=0
+                    
+    return isCapture
 
 def withdrawerCapture(board, old_i, old_j, new_i, new_j, is_imitator=False):
+    global overNot
     capture_i = old_i - np.sign(new_i - old_i)
     capture_j = old_j - np.sign(new_j - old_j)
 
     if 0 <= capture_i < 8 and 0 <= capture_j < 8:
-        if isOppositePiece(board, old_i, old_j, capture_i, capture_j):
+        if isOppositePiece(board, new_i, new_j, capture_i, capture_j):
             if is_imitator:
                 if CODE_TO_INIT[board[capture_i][capture_j]].lower() != 'w':
                     return False
+            if board[capture_i][capture_j] == 12 or board[capture_i][capture_j] == 13:
+                overNot = True
             board[capture_i][capture_j] = 0
             return True
     return False
 
 
 def coordinatorCapture(board, new_i, new_j, whose_move, is_imitator=False):
+    global overNot
     king_i = -1
     king_j = -1
     i = 0
     j = 0
-    while king_i == -1:
+    while king_i == -1 and i < 8:
         while king_j == -1 and j < 8:
             if board[i][j] == (12 + whose_move):
                 king_i = i
@@ -480,6 +553,9 @@ def coordinatorCapture(board, new_i, new_j, whose_move, is_imitator=False):
         i += 1
         j = 0
 
+    if king_i==-1 and king_j==-1:
+        return False
+
     capture1 = isOppositePiece(board, new_i, new_j, king_i, new_j)
     capture2 = isOppositePiece(board, new_i, new_j, new_i, king_j)
 
@@ -487,18 +563,26 @@ def coordinatorCapture(board, new_i, new_j, whose_move, is_imitator=False):
         capture1 = capture1 and (board[king_i][new_j] == 4 or board[king_i][new_j] == 5)
         capture2 = capture2 and (board[new_i][king_j] == 4 or board[new_i][king_j] == 5)
     if capture1:
+        if board[king_i][new_j] == 12 or board[king_i][new_j] == 13:
+            overNot = True
         board[king_i][new_j] = 0
     if capture2:
+        if board[new_i][king_j] == 12 or board[new_i][king_j] == 13:
+            overNot = True
         board[new_i][king_j] = 0
     return capture1 or capture2
 
 def leaperCapture(board, old_i, old_j, new_i, new_j, is_imitator=False):
+    global overNot
     capture_i = new_i - np.sign(new_i - old_i)
     capture_j = new_j - np.sign(new_j - old_j)
-    if isOppositePiece(board, old_i, old_j, capture_i, capture_j):
+    if isOppositePiece(board, new_i, new_j, capture_i, capture_j):
         if is_imitator:
             if CODE_TO_INIT[board[capture_i][capture_j]].lower() != 'l':
                 return False
+
+        if board[capture_i][capture_j] == 12 or board[capture_i][capture_j] == 13:
+            overNot = True
         board[capture_i][capture_j] = 0
         return True
     return False
