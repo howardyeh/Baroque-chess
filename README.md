@@ -6,4 +6,4 @@ The project is implemented with
 - Alpha-Beta pruning algorithm
 - Zobrist Hashing
 
-Some moving and capture features are derive from https://github.com/AstroBoy1/Baroque-Chess-Ultima-
+Some moving and capture features are derived from https://github.com/AstroBoy1/Baroque-Chess-Ultima-
