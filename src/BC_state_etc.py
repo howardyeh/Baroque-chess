@@ -93,7 +93,6 @@ F L I W K I L C
 ''')
 
 
-
 class BC_state:
     def __init__(self, old_board=INITIAL, whose_move=WHITE):
         new_board = [r[:] for r in old_board]  # Deeply copy the board.

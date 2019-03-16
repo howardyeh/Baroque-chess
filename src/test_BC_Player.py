@@ -33,7 +33,7 @@ def makeMove(currentState, currentRemark, timelimit):
     if mySide is None:
         mySide = currentState.whose_move
 
-    max_depth = 2
+    max_depth = 1
     startTime = time.time()
     move = iterative_deepening(currentState, max_depth, timelimit)
     newState = stateTransform(currentState, move)
@@ -150,6 +150,7 @@ def min_max(state, depth, min_max_value, timelimit, alphaBeta = True):
             all_move_list = possibleMoves(state)
             for m in all_move_list:
                 new_state_list.append((stateTransform(state, m), m))
+            shuffle(new_state_list)
 
             for s_, m_ in new_state_list:
                 nextLayer_min, _ = min_max(s_, depth - 1, deepcopy(min_max_value), timelimit)
@@ -172,6 +173,7 @@ def min_max(state, depth, min_max_value, timelimit, alphaBeta = True):
             all_move_list = possibleMoves(state)
             for m in all_move_list:
                 new_state_list.append((stateTransform(state, m), m))
+            shuffle(new_state_list)
 
             for s_, m_ in new_state_list:
                 nextLayer_max, _ = min_max(s_, depth - 1, deepcopy(min_max_value), timelimit)
