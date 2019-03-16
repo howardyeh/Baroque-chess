@@ -13,8 +13,8 @@ VERSION = '0.8-BETA'
 # Get names of players and time limit from the command line.
 
 import sys
-TIME_PER_MOVE = 1.0 # default time limit is half a second.
-TURN_LIMIT = 200   # Good for testing.
+TIME_PER_MOVE = 4.0 # default time limit is half a second.
+TURN_LIMIT = 100   # Good for testing.
 #TURN_LIMIT = 100 # Terminates runaway games.
 if len(sys.argv) > 1:
     import importlib    
