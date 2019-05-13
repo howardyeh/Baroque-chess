@@ -7,7 +7,6 @@ The project is implemented with
 - Iterative deepening search
 - Zobrist Hashing
 
-Some moving and capture features are derived from https://github.com/AstroBoy1/Baroque-Chess-Ultima-
 
 # Run
 ```
